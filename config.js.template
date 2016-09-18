@@ -1,0 +1,11 @@
+var config = {};
+
+// generate using
+// https://trello.com/1/appKey/generate
+config.appkey = "<YOUR TRELLO APP KEY>";
+
+// get from
+// https://trello.com/1/connect?key=<YOUR TRELLO APP KEY>&name=trellow-workflow&response_type=token
+config.authtoken = "<YOUR TRELLO ACCOUNT AUTH TOKEN>";
+
+module.exports = config;
