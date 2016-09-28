@@ -12,8 +12,6 @@ program
   .option('--history [WW Month]', "History list to move Done list to")
   .parse(process.argv);
 
-console.log(program.history);
-
 var personal_label = 'blue';
 var process_label = 'green';
 var work_label = 'yellow';
@@ -222,6 +220,9 @@ var copyBackPeriodic = function(card) {
   } else if (card.name.includes('(p4w)')) {
     console.log("would copy " + card.name + " to bi-weekly/monthly list");
     list = periodic_biweekmonthly;
+  } else if (card.name.includes('(p3m)')) {
+    console.log("would copy " + card.name + " to quarterly/yearly list");
+    list = periodic_quarteryearly;
   }
   if (board && list) {
     tidy_lists.push(copyCard(card, board, list, 'top'));
@@ -238,12 +239,12 @@ var moveCard = function(card, board, list, pos) {
                   + " list " + list.name);
       return next();
     } else {
-      console.log("PUT " + "/1/cards/" + card.id +
-               JSON.stringify({
-                 idBoard: board.id,
-                 idList: list.id,
-                 pos: pos
-               }));
+      // console.log("PUT " + "/1/cards/" + card.id +
+      //          JSON.stringify({
+      //            idBoard: board.id,
+      //            idList: list.id,
+      //            pos: pos
+      //          }));
     }
 
     t.put("/1/cards/" + card.id,
@@ -265,12 +266,12 @@ var tidy_lists = [
     if (!program.today) {
       return next();
     }
-    console.log("move items from inbox to backlog based on label color");
+    console.log("move items from Inbox to backlog based on label color");
     t.get("/1/lists/" + inbox.id + "/cards", function(err, data) {
       if (err) throw err;
 
       for (i = 0; i < data.length; i++) {
-        console.log(data[i]);
+        // console.log(data[i]);
         var board = null, list = null;
         if (card_has_label(data[i],personal_label)) {
           console.log("move to Backlog (personal)/Backlog");
@@ -301,7 +302,7 @@ var tidy_lists = [
       if (err) throw err;
 
       for (i = 0; i < data.length; i++) {
-        console.log(data[i]);
+        // console.log(data[i]);
         var board = null, list = null;
         if (card_has_label(data[i], periodic_label)) {
           console.log("would move periodic");
