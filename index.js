@@ -1,6 +1,7 @@
 var Trello = require("node-trello");
 var program = require('commander');
 var config = require('./config');
+var dateFormat = require('dateformat');
 
 // to get auth token
 var t = new Trello(config.appkey, config.authtoken);
@@ -9,6 +10,7 @@ program
   .option('-d, --dry-run', "Dry run (don't make changes)")
   .option('-w, --weekly-review', "After weekly review cleanup")
   .option('-t, --today', "Before starting today (also can be done at end of day)")
+  .option('-m, --maintenance', "Periodically, add creation dates to titles, etc.")
   .option('--history [WW Month]', "History list to move Done list to")
   .parse(process.argv);
 
@@ -163,6 +165,13 @@ var card_has_label = function(card, color) {
   return false;
 }
 
+var card_has_date = function(card) {
+  if (card.name.search(/\(\d{4}-\d{2}-\d{2}\)/) >= 0) {
+    return true;
+  }
+  return false;
+}
+
 var movePeriodic = function(card) {
   var board = periodic_board;
   var list = null;
@@ -185,6 +194,18 @@ var movePeriodic = function(card) {
 
 }
 
+var updateCardName = function(card) {
+  var todo = function(next) {
+    var options = {"value": card.name };
+    t.put("/1/cards/" + card.id + '/name', options, function(err, data) {
+      if (err) throw err;
+      console.log("updated name to " + card.name);
+      next();
+    });
+  }
+  return todo;
+}
+
 var copyCard = function(card, board, list, pos) {
   var todo = function(next) {
     var options = {"idList": list.id,
@@ -199,11 +220,21 @@ var copyCard = function(card, board, list, pos) {
     }
     t.post("/1/cards", options, function(err, data) {
       if (err) throw err;
+      console.log("copied " + card.name + " to " + board.name
+                  + " list " + list.name);
       next();
     });
   };
   return todo;
 };
+
+var addDateToName = function(card) {
+  var dt = new Date(card.dateLastActivity);
+  var dts = dateFormat(dt, "(yyyy-mm-dd)");
+  console.log("would add " + dts + " to " + card.name);
+  card.name = card.name + " " + dts;
+  tidy_lists.push(updateCardName(card));
+}
 
 var copyBackPeriodic = function(card) {
   var board = periodic_board;
@@ -254,7 +285,8 @@ var moveCard = function(card, board, list, pos) {
             pos: pos
           }, function(err,data) {
               if (err) throw err;
-              console.log(data);
+              console.log("moved " + card.name + " to " + board.name
+                          + " list " + list.name);
               next();
           });
   };
@@ -262,6 +294,22 @@ var moveCard = function(card, board, list, pos) {
 };
 
 var tidy_lists = [
+  function(next) {
+    if (!program.maintenance) {
+      return next();
+    }
+    console.log("add creation date to title (if doesn't exist)");
+    t.get("/1/lists/" + inbox.id + "/cards", function(err, data) {
+      if (err) throw err;
+      for (i = 0; i < data.length; i++) {
+        // console.log(data[i]);
+        if (!card_has_date(data[i])) {
+          addDateToName(data[i]);
+        }
+      }
+      next();
+    });
+  },
   function(next) {
     if (!program.today) {
       return next();
