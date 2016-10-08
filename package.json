@@ -4,11 +4,15 @@
   "description": "Kanban workflow using Trello",
   "main": "index.js",
   "dependencies": {
+    "cli-table": "^0.3.1",
     "commander": "^2.9.0",
     "dateformat": "^1.0.12",
     "node-trello": "^1.1.2"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "mocha": "^3.1.0",
+    "should": "^11.1.0"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

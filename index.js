@@ -2,6 +2,39 @@ var Trello = require("node-trello");
 var program = require('commander');
 var config = require('./config');
 var dateFormat = require('dateformat');
+var Table = require('cli-table');
+var querystring = require("querystring");
+
+var would_move_summary = new Table({ head: ["", "Items"]});
+
+var move_destination = {};
+var would_move = function(item,dest) {
+  if (!(dest in move_destination)) {
+    move_destination[dest] = [];
+  }
+  move_destination[dest].push(item);
+}
+var would_move_to_list = function(item, board, list) {
+  dest = board.name + " - " + list.name;
+  if (!(dest in move_destination)) {
+    move_destination[dest] = [];
+  }
+  move_destination[dest].push(item);
+}
+var summarize_changes = function() {
+
+  for (var dest in move_destination) {
+    var d = {};
+    d[dest] = move_destination[dest].join('\n');
+    would_move_summary.push(d);
+  }
+  if (would_move_summary.length > 0) {
+    console.log("would move items to:")
+    console.log(would_move_summary.toString());
+  } else {
+    console.log("No changes");
+  }
+}
 
 // to get auth token
 var t = new Trello(config.appkey, config.authtoken);
@@ -10,6 +43,7 @@ program
   .option('-d, --dry-run', "Dry run (don't make changes)")
   .option('-w, --weekly-review', "After weekly review cleanup")
   .option('-t, --today', "Before starting today (also can be done at end of day)")
+  .option('-c, --cherry-pick', "move cards labeled 'orange' from lists into Today")
   .option('-m, --maintenance', "Periodically, add creation dates to titles, etc.")
   .option('--history [WW Month]', "History list to move Done list to")
   .parse(process.argv);
@@ -18,6 +52,7 @@ var personal_label = 'blue';
 var process_label = 'green';
 var work_label = 'yellow';
 var periodic_label = 'purple';
+var cherry_pick_label = 'orange';
 
 var daily, backlog_personal, backlog_work;
 var history_board, periodic_board, someday;
@@ -176,19 +211,20 @@ var movePeriodic = function(card) {
   var board = periodic_board;
   var list = null;
   if (card.name.includes('(po)')) {
-    console.log("would move " + card.name + " to often list");
+    // console.log("would move " + card.name + " to often list");
     list = periodic_often;
   } else if (card.name.includes('(p1w)')) {
-    console.log("would move " + card.name + " to weekly list");
+    // console.log("would move " + card.name + " to weekly list");
     list = periodic_weekly;
   } else if (card.name.includes('(p2w)')) {
-    console.log("would move " + card.name + " to bi-weekly/monthly list");
+    // console.log("would move " + card.name + " to bi-weekly/monthly list");
     list = periodic_biweekmonthly;
   } else if (card.name.includes('(p4w)')) {
-    console.log("would move " + card.name + " to bi-weekly/monthly list");
+    // console.log("would move " + card.name + " to bi-weekly/monthly list");
     list = periodic_biweekmonthly;
   }
   if (board && list) {
+    would_move_to_list(card.name, board, list);
     tidy_lists.push(moveCard(card, board, list, 'top'));
   }
 
@@ -231,9 +267,13 @@ var copyCard = function(card, board, list, pos) {
 var addDateToName = function(card) {
   var dt = new Date(card.dateLastActivity);
   var dts = dateFormat(dt, "(yyyy-mm-dd)");
-  console.log("would add " + dts + " to " + card.name);
-  card.name = card.name + " " + dts;
-  tidy_lists.push(updateCardName(card));
+  if (program.dryRun) {
+    console.log("would add " + dts + " to " + card.name);
+  } else {
+    console.log("adding " + dts + " to " + card.name);
+    card.name = card.name + " " + dts;
+    tidy_lists.push(updateCardName(card));
+  }
 }
 
 var copyBackPeriodic = function(card) {
@@ -260,18 +300,93 @@ var copyBackPeriodic = function(card) {
   }
 }
 
+var removeLabel = function(card, labelname) {
+  var todo = function(next) {
+    if (program.dryRun) {
+      // DEBUG: don't execute the PUT
+      console.log("would remove label " + labelname + " from " + card.name);
+
+      var label = null;
+      for (var i = 0; i < card.labels.length; i++) {
+        console.log(card.labels[i]);
+        if (card.labels[i].color == labelname) {
+          label = card.labels[i];
+        }
+      }
+      console.log("DELETE " + "/1/cards/" + card.id + "/idLabels/" + label.id);
+      return next();
+    }
+    var label = null;
+    for (var i = 0; i < card.labels.length; i++) {
+      console.log(card.labels[i]);
+      if (card.labels[i].color == labelname) {
+        label = card.labels[i];
+      }
+    }
+    if (label) {
+      // with_auth = "/1/cards/" + card.id + "/idLabels/" + label.id;
+      // with_auth += "?" + querystring.stringify(t.addAuthArgs(t.parseQuery(with_auth, {})));
+      // console.log(with_auth);
+
+      t.del("/1/cards/" + card.id + "/idLabels/" + label.id, function(err,data) {
+              if (err) throw err;
+              console.log("removed label " + label.name + " from " + card.name);
+              next();
+            });
+    } else {
+      next();
+    }
+  };
+  return todo;
+}
+
+var moveCardAndRemoveLabel = function(card, board, list, pos, label) {
+  var todo = function(next) {
+
+    if (program.dryRun) {
+      // DEBUG: don't execute the PUT
+      // console.log("would move " + card.name + " to " + board.name
+      //             + " list " + list.name);
+      would_move_to_list(card.name, board, list);
+      return next();
+    } else {
+      // console.log("PUT " + "/1/cards/" + card.id +
+      //          JSON.stringify({a
+      //            idBoard: board.id,
+      //            idList: list.id,
+      //            pos: pos
+      //          }));
+    }
+
+    t.put("/1/cards/" + card.id,
+          {
+            idBoard: board.id,
+            idList: list.id,
+            pos: pos
+          }, function(err,data) {
+              if (err) throw err;
+              console.log("moved " + card.name + " to " + board.name
+                          + " list " + list.name);
+              // console.log("got " + JSON.stringify(data));
+              tidy_lists.push(removeLabel(data, label));
+              next();
+          });
+  };
+  return todo;
+}
 
 var moveCard = function(card, board, list, pos) {
   var todo = function(next) {
 
     if (program.dryRun) {
       // DEBUG: don't execute the PUT
-      console.log("would move " + card.name + " to " + board.name
-                  + " list " + list.name);
+      // console.log("would move " + card.name + " to " + board.name
+      //             + " list " + list.name);
+      would_move_to_list(card.name, board, list);
       return next();
     } else {
       // console.log("PUT " + "/1/cards/" + card.id +
-      //          JSON.stringify({
+      //          JSON.stringify({a
       //            idBoard: board.id,
       //            idList: list.id,
       //            pos: pos
@@ -311,6 +426,38 @@ var tidy_lists = [
     });
   },
   function(next) {
+    if (!program.maintenance) {
+      return next();
+    }
+    console.log("add creation date to title (if doesn't exist)");
+    t.get("/1/lists/" + today.id + "/cards", function(err, data) {
+      if (err) throw err;
+      for (i = 0; i < data.length; i++) {
+        // console.log(data[i]);
+        if (!card_has_date(data[i])) {
+          addDateToName(data[i]);
+        }
+      }
+      next();
+    });
+  },
+  function(next) {
+    if (!program.maintenance) {
+      return next();
+    }
+    console.log("add creation date to title (if doesn't exist)");
+    t.get("/1/lists/" + backlog_personal_backlog.id + "/cards", function(err, data) {
+      if (err) throw err;
+      for (i = 0; i < data.length; i++) {
+        // console.log(data[i]);
+        if (!card_has_date(data[i])) {
+          addDateToName(data[i]);
+        }
+      }
+      next();
+    });
+  },
+  function(next) {
     if (!program.today) {
       return next();
     }
@@ -322,19 +469,20 @@ var tidy_lists = [
         // console.log(data[i]);
         var board = null, list = null;
         if (card_has_label(data[i],personal_label)) {
-          console.log("move to Backlog (personal)/Backlog");
+          // console.log("move to Backlog (personal)/Backlog");
           board = backlog_personal;
           list = backlog_personal_backlog;
         } else if (card_has_label(data[i],process_label)) {
-          console.log("move to Backlog (personal)/Backlog");
+          // console.log("move to Backlog (personal)/Backlog");
           board = backlog_personal;
           list = backlog_personal_backlog;
         } else if (card_has_label(data[i],work_label)) {
-          console.log("move to Backlog (work)/Backlog");
+          // console.log("move to Backlog (work)/Backlog");
           board = backlog_work;
           list = backlog_work_backlog;
         }
         if (board && list) {
+          would_move_to_list(data[i].name, board, list);
           tidy_lists.push(moveCard(data[i], board, list, 'top'));
         }
       }
@@ -353,23 +501,24 @@ var tidy_lists = [
         // console.log(data[i]);
         var board = null, list = null;
         if (card_has_label(data[i], periodic_label)) {
-          console.log("would move periodic");
+          // console.log("would move periodic");
           movePeriodic(data[i]);
 
         } else if (card_has_label(data[i],personal_label)) {
-          console.log("move to Backlog (personal)/Backlog");
+          // console.log("move to Backlog (personal)/Backlog");
           board = backlog_personal;
           list = backlog_personal_backlog;
         } else if (card_has_label(data[i],process_label)) {
-          console.log("move to Backlog (personal)/Backlog");
+          // console.log("move to Backlog (personal)/Backlog");
           board = backlog_personal;
           list = backlog_personal_backlog;
         } else if (card_has_label(data[i],work_label)) {
-          console.log("move to Backlog (work)/Backlog");
+          // console.log("move to Backlog (work)/Backlog");
           board = backlog_work;
           list = backlog_work_backlog;
         }
         if (board && list) {
+          would_move_to_list(data[i].name, board, list);
           tidy_lists.push(moveCard(data[i], board, list, 'top'));
         }
       }
@@ -401,13 +550,57 @@ var tidy_lists = [
     t.get("/1/lists/" + done.id + "/cards", function(err, data) {
       if (err) throw err;
       for (i = 0; i < data.length; i++) {
-          console.log("would move to history");
+          // console.log("would move to history");
+          would_move_to_list(data[i].name, history_board, history_this_week);
           tidy_lists.push(moveCard(data[i], history_board,
                           history_this_week, "bottom"));
       }
       next();
     });
 
+  },
+  function(next) {
+    if (!program.cherryPick) {
+      return next();
+    }
+    console.log("move all cherry picked items from Personal backlog to Kanban Today");
+    t.get("/1/lists/" + backlog_personal_backlog.id + "/cards", function(err, data) {
+      if (err) throw err;
+      for (i = 0; i < data.length; i++) {
+        // console.log(data[i]);
+        if (card_has_label(data[i], cherry_pick_label)) {
+          would_move_to_list(data[i].name, daily, today);
+          tidy_lists.push(moveCardAndRemoveLabel(data[i], daily, today,
+                                                 "bottom", cherry_pick_label));
+        }
+      }
+      next();
+    });
+
+  },
+  function(next) {
+    if (!program.cherryPick) {
+      return next();
+    }
+    console.log("move all cherry picked items from Work backlog to Kanban Today");
+    t.get("/1/lists/" + backlog_work_backlog.id + "/cards", function(err, data) {
+      if (err) throw err;
+      for (i = 0; i < data.length; i++) {
+        // console.log(data[i]);
+        if (card_has_label(data[i], cherry_pick_label)) {
+          would_move_to_list(data[i].name, daily, today);
+          tidy_lists.push(moveCardAndRemoveLabel(data[i], daily, today,
+                                                 "bottom", cherry_pick_label));
+        }
+      }
+      next();
+    });
+
+  },
+  function(next) {
+    // summarize
+    summarize_changes();
+    next();
   }
 ];
 
