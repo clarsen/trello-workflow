@@ -4,11 +4,13 @@
   "description": "Kanban workflow using Trello",
   "main": "index.js",
   "dependencies": {
+    "async": "^2.1.2",
     "body-parser": "~1.0.x",
     "cli-table": "^0.3.1",
     "commander": "^2.9.0",
     "crypto": "0.0.3",
     "dateformat": "^1.0.12",
+    "dotenv": "^2.0.0",
     "express": "~4.x.x",
     "node-trello": "^1.1.2"
   },
