@@ -6,8 +6,9 @@ var Table = require('cli-table');
 var querystring = require("querystring");
 
 var would_move_summary = new Table({ head: ["", "Items"]});
-
 var move_destination = {};
+
+
 var would_move = function(item,dest) {
   if (!(dest in move_destination)) {
     move_destination[dest] = [];
@@ -21,6 +22,17 @@ var would_move_to_list = function(item, board, list) {
   }
   move_destination[dest].push(item);
 }
+
+var would_copy_summary = new Table({ head: ["", "Items"]});
+var copy_destination = {};
+var would_copy_to_list = function(item, board, list) {
+  dest = board.name + " - " + list.name;
+  if (!(dest in copy_destination)) {
+    copy_destination[dest] = [];
+  }
+  copy_destination[dest].push(item);
+}
+
 var summarize_changes = function() {
 
   for (var dest in move_destination) {
@@ -31,6 +43,18 @@ var summarize_changes = function() {
   if (would_move_summary.length > 0) {
     console.log("would move items to:")
     console.log(would_move_summary.toString());
+  } else {
+    console.log("No changes");
+  }
+
+  for (var dest in copy_destination) {
+    var d = {};
+    d[dest] = copy_destination[dest].join('\n');
+    would_copy_summary.push(d);
+  }
+  if (would_copy_summary.length > 0) {
+    console.log("would copy items to:")
+    console.log(would_copy_summary.toString());
   } else {
     console.log("No changes");
   }
@@ -207,6 +231,13 @@ var card_has_date = function(card) {
   return false;
 }
 
+var card_has_periodic = function(card) {
+  if (card.name.search(/\((po|p1w|p2w|p4w|p12m)\)/) >= 0) {
+    return true;
+  }
+  return false;
+}
+
 var movePeriodic = function(card) {
   var board = periodic_board;
   var list = null;
@@ -222,6 +253,10 @@ var movePeriodic = function(card) {
   } else if (card.name.includes('(p4w)')) {
     // console.log("would move " + card.name + " to bi-weekly/monthly list");
     list = periodic_biweekmonthly;
+  } else if (card.name.includes('(p3m)')) {
+    list = periodic_quarteryearly;
+  } else if (card.name.includes('(p12m)')) {
+    list = periodic_quarteryearly;
   }
   if (board && list) {
     would_move_to_list(card.name, board, list);
@@ -248,9 +283,9 @@ var copyCard = function(card, board, list, pos) {
                    "idCardSource": card.id,
                    "pos": "top",
                   };
-    console.log("would copy " + card.name + " to "
-                + board.name + " list " + list.name + JSON.stringify(options)
-              );
+    // console.log("would copy " + card.name + " to "
+    //             + board.name + " list " + list.name + JSON.stringify(options)
+    //           );
     if (program.dryRun) {
       return next();
     }
@@ -280,22 +315,26 @@ var copyBackPeriodic = function(card) {
   var board = periodic_board;
   var list = null;
   if (card.name.includes('(po)')) {
-    console.log("would copy " + card.name + " to often list");
+    // console.log("would copy " + card.name + " to often list");
     list = periodic_often;
   } else if (card.name.includes('(p1w)')) {
-    console.log("would copy " + card.name + " to weekly list");
+    // console.log("would copy " + card.name + " to weekly list");
     list = periodic_weekly;
   } else if (card.name.includes('(p2w)')) {
-    console.log("would copy " + card.name + " to bi-weekly/monthly list");
+    // console.log("would copy " + card.name + " to bi-weekly/monthly list");
     list = periodic_biweekmonthly;
   } else if (card.name.includes('(p4w)')) {
-    console.log("would copy " + card.name + " to bi-weekly/monthly list");
+    // console.log("would copy " + card.name + " to bi-weekly/monthly list");
     list = periodic_biweekmonthly;
   } else if (card.name.includes('(p3m)')) {
-    console.log("would copy " + card.name + " to quarterly/yearly list");
+    // console.log("would copy " + card.name + " to quarterly/yearly list");
+    list = periodic_quarteryearly;
+  } else if (card.name.includes('(p12m)')) {
+    // console.log("would copy " + card.name + " to quarterly/yearly list");
     list = periodic_quarteryearly;
   }
   if (board && list) {
+    would_copy_to_list(card.name, board, list);
     tidy_lists.push(copyCard(card, board, list, 'top'));
   }
 }
@@ -318,7 +357,7 @@ var removeLabel = function(card, labelname) {
     }
     var label = null;
     for (var i = 0; i < card.labels.length; i++) {
-      console.log(card.labels[i]);
+      // console.log(card.labels[i]);
       if (card.labels[i].color == labelname) {
         label = card.labels[i];
       }
@@ -330,7 +369,7 @@ var removeLabel = function(card, labelname) {
 
       t.del("/1/cards/" + card.id + "/idLabels/" + label.id, function(err,data) {
               if (err) throw err;
-              console.log("removed label " + label.name + " from " + card.name);
+              console.log("removed label " + label.color + " from " + card.name);
               next();
             });
     } else {
@@ -418,7 +457,7 @@ var tidy_lists = [
       if (err) throw err;
       for (i = 0; i < data.length; i++) {
         // console.log(data[i]);
-        if (!card_has_date(data[i])) {
+        if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
           addDateToName(data[i]);
         }
       }
@@ -434,7 +473,7 @@ var tidy_lists = [
       if (err) throw err;
       for (i = 0; i < data.length; i++) {
         // console.log(data[i]);
-        if (!card_has_date(data[i])) {
+        if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
           addDateToName(data[i]);
         }
       }
@@ -450,7 +489,7 @@ var tidy_lists = [
       if (err) throw err;
       for (i = 0; i < data.length; i++) {
         // console.log(data[i]);
-        if (!card_has_date(data[i])) {
+        if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
           addDateToName(data[i]);
         }
       }
@@ -468,7 +507,10 @@ var tidy_lists = [
       for (i = 0; i < data.length; i++) {
         // console.log(data[i]);
         var board = null, list = null;
-        if (card_has_label(data[i],personal_label)) {
+        if (card_has_label(data[i], periodic_label)) {
+          // console.log("would move periodic");
+          movePeriodic(data[i]);
+        } else if (card_has_label(data[i],personal_label)) {
           // console.log("move to Backlog (personal)/Backlog");
           board = backlog_personal;
           list = backlog_personal_backlog;
@@ -584,6 +626,82 @@ var tidy_lists = [
     }
     console.log("move all cherry picked items from Work backlog to Kanban Today");
     t.get("/1/lists/" + backlog_work_backlog.id + "/cards", function(err, data) {
+      if (err) throw err;
+      for (i = 0; i < data.length; i++) {
+        // console.log(data[i]);
+        if (card_has_label(data[i], cherry_pick_label)) {
+          would_move_to_list(data[i].name, daily, today);
+          tidy_lists.push(moveCardAndRemoveLabel(data[i], daily, today,
+                                                 "bottom", cherry_pick_label));
+        }
+      }
+      next();
+    });
+
+  },
+  function(next) {
+    if (!program.cherryPick) {
+      return next();
+    }
+    console.log("move all cherry picked items from Periodic often to Kanban Today");
+    t.get("/1/lists/" + periodic_often.id + "/cards", function(err, data) {
+      if (err) throw err;
+      for (i = 0; i < data.length; i++) {
+        // console.log(data[i]);
+        if (card_has_label(data[i], cherry_pick_label)) {
+          would_move_to_list(data[i].name, daily, today);
+          tidy_lists.push(moveCardAndRemoveLabel(data[i], daily, today,
+                                                 "bottom", cherry_pick_label));
+        }
+      }
+      next();
+    });
+
+  },
+  function(next) {
+    if (!program.cherryPick) {
+      return next();
+    }
+    console.log("move all cherry picked items from Periodic weekly to Kanban Today");
+    t.get("/1/lists/" + periodic_weekly.id + "/cards", function(err, data) {
+      if (err) throw err;
+      for (i = 0; i < data.length; i++) {
+        // console.log(data[i]);
+        if (card_has_label(data[i], cherry_pick_label)) {
+          would_move_to_list(data[i].name, daily, today);
+          tidy_lists.push(moveCardAndRemoveLabel(data[i], daily, today,
+                                                 "bottom", cherry_pick_label));
+        }
+      }
+      next();
+    });
+
+  },
+  function(next) {
+    if (!program.cherryPick) {
+      return next();
+    }
+    console.log("move all cherry picked items from Periodic bi-weekly/monthly to Kanban Today");
+    t.get("/1/lists/" + periodic_biweekmonthly.id + "/cards", function(err, data) {
+      if (err) throw err;
+      for (i = 0; i < data.length; i++) {
+        // console.log(data[i]);
+        if (card_has_label(data[i], cherry_pick_label)) {
+          would_move_to_list(data[i].name, daily, today);
+          tidy_lists.push(moveCardAndRemoveLabel(data[i], daily, today,
+                                                 "bottom", cherry_pick_label));
+        }
+      }
+      next();
+    });
+
+  },
+  function(next) {
+    if (!program.cherryPick) {
+      return next();
+    }
+    console.log("move all cherry picked items from Periodic quarterly/yearly to Kanban Today");
+    t.get("/1/lists/" + periodic_quarteryearly.id + "/cards", function(err, data) {
       if (err) throw err;
       for (i = 0; i < data.length; i++) {
         // console.log(data[i]);
