@@ -1,6 +1,5 @@
 var Trello = require("node-trello");
 var program = require('commander');
-var config = require('./config');
 var dateFormat = require('dateformat');
 var Table = require('cli-table');
 var querystring = require("querystring");
@@ -61,7 +60,7 @@ var summarize_changes = function() {
 }
 
 // to get auth token
-var t = new Trello(config.appkey, config.authtoken);
+var t = new Trello(process.env.appkey, process.env.authtoken);
 
 program
   .option('-d, --dry-run', "Dry run (don't make changes)")
