@@ -68,6 +68,7 @@ program
   .option('-t, --today', "Before starting today (also can be done at end of day)")
   .option('-c, --cherry-pick', "move cards labeled 'orange' from lists into Today")
   .option('-m, --maintenance', "Periodically, add creation dates to titles, etc.")
+  .option('--watch', "watch boards")
   .option('--history [WW Month]', "History list to move Done list to")
   .parse(process.argv);
 
@@ -713,6 +714,21 @@ var tidy_lists = [
       next();
     });
 
+  },
+  function(next) {
+    if (!program.watch) {
+      return next();
+    }
+    console.log("(re)setting up webhooks");
+    t.post("/1/webhooks",
+        {
+          callbackURL: process.env.TRELLO_HOOK_URL,
+          idModel: inbox.id,
+        }, function(err, data) {
+          if (err) throw err;
+          console.log(data);
+          next();
+        });
   },
   function(next) {
     // summarize
