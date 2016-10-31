@@ -8,6 +8,7 @@
     "body-parser": "~1.0.x",
     "cli-table": "^0.3.1",
     "commander": "^2.9.0",
+    "cron": "^1.1.1",
     "crypto": "0.0.3",
     "dateformat": "^1.0.12",
     "dotenv": "^2.0.0",
