@@ -33,5 +33,26 @@ async.series([
       timeZone: 'America/Los_Angeles'
     });
     job.start();
+
+    var morningjob = new CronJob({
+      cronTime: '30 0 4 * * *',
+      onTick: function() {
+        /*
+         * Runs every day 4:00:30am.
+         */
+         console.log("every day 4am");
+         async.series([
+           function(cb) {
+             tops.preparetoday(cb);
+           },
+           function(cb) {
+             tops.commit(cb);
+           },
+         ])
+      },
+      start: false,
+      timeZone: 'America/Los_Angeles'
+    });
+    morningjob.start();
   },
 ]);

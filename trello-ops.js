@@ -1,6 +1,7 @@
 var Trello = require("node-trello");
 var dateFormat = require('dateformat');
 var async = require('async');
+var Table = require('cli-table');
 
 // to get auth token
 var t = new Trello(process.env.appkey, process.env.authtoken);
@@ -8,6 +9,10 @@ var cardops = [];
 
 var dryRun = true;
 var cherry_pick_label = 'orange';
+var personal_label = 'blue';
+var process_label = 'green';
+var work_label = 'yellow';
+var periodic_label = 'purple';
 
 var boards = {
   daily: null,
@@ -33,7 +38,8 @@ var lists = {
     weekly: null,
     biweekmonthly: null,
     quarteryearly: null,
-  }
+  },
+  somedaymaybe: null,
 };
 // var daily, backlog_personal, backlog_work;
 
@@ -44,6 +50,130 @@ var history_this_week, history_this_week_goals;
 var history_this_month_goals, history_this_month_sprints;
 var periodic_often, periodic_weekly, periodic_biweekmonthly;
 var periodic_quarteryearly;
+
+var would_move_summary = new Table({ head: ["", "Items"]});
+var move_destination = {};
+
+var would_move = function(item,dest) {
+  if (!(dest in move_destination)) {
+    move_destination[dest] = [];
+  }
+  move_destination[dest].push(item);
+}
+var would_move_to_list = function(item, board, list) {
+  dest = board.name + " - " + list.name;
+  if (!(dest in move_destination)) {
+    move_destination[dest] = [];
+  }
+  move_destination[dest].push(item);
+}
+
+var would_copy_summary = new Table({ head: ["", "Items"]});
+var copy_destination = {};
+var would_copy_to_list = function(item, board, list) {
+  dest = board.name + " - " + list.name;
+  if (!(dest in copy_destination)) {
+    copy_destination[dest] = [];
+  }
+  copy_destination[dest].push(item);
+}
+
+exports.summarize_changes = function() {
+console.log("tops.summary");
+  for (var dest in move_destination) {
+    var d = {};
+    d[dest] = move_destination[dest].join('\n');
+    would_move_summary.push(d);
+  }
+  if (would_move_summary.length > 0) {
+    console.log("would move items to:")
+    console.log(would_move_summary.toString());
+  } else {
+    console.log("No changes");
+  }
+
+  for (var dest in copy_destination) {
+    var d = {};
+    d[dest] = copy_destination[dest].join('\n');
+    would_copy_summary.push(d);
+  }
+  if (would_copy_summary.length > 0) {
+    console.log("would copy items to:")
+    console.log(would_copy_summary.toString());
+  } else {
+    console.log("No changes");
+  }
+}
+
+exports.preparetoday = function(cb) {
+  async.series([
+    function(cb) {
+      console.log("move items from Inbox to backlog based on label color");
+      t.get("/1/lists/" + lists.inbox.id + "/cards", function(err, data) {
+        if (err) return cb(err);
+
+        for (i = 0; i < data.length; i++) {
+          // console.log(data[i]);
+          var board = null, list = null;
+          if (card_has_label(data[i], periodic_label)) {
+            // console.log("would move periodic");
+            movePeriodic(data[i]);
+          } else if (card_has_label(data[i],personal_label)) {
+            // console.log("move to Backlog (personal)/Backlog");
+            board = boards.backlog_personal;
+            list = lists.backlog.personal_backlog;
+          } else if (card_has_label(data[i],process_label)) {
+            // console.log("move to Backlog (personal)/Backlog");
+            board = boards.backlog_personal;
+            list = lists.backlog.personal_backlog;
+          } else if (card_has_label(data[i],work_label)) {
+            // console.log("move to Backlog (work)/Backlog");
+            board = boards.backlog_work;
+            list = lists.backlog.work_backlog;
+          }
+          if (board && list) {
+            would_move_to_list(data[i].name, board, list);
+            cardops.push(moveCard(data[i], board, list, 'top'));
+          }
+        }
+        cb(null);
+      });
+    },
+    function(cb) {
+      console.log("move items from Today to backlog based on label color");
+      t.get("/1/lists/" + lists.today.id + "/cards", function(err, data) {
+        if (err) return cb(err);
+
+        for (i = 0; i < data.length; i++) {
+          // console.log(data[i]);
+          var board = null, list = null;
+          if (card_has_label(data[i], periodic_label)) {
+            // console.log("would move periodic");
+            movePeriodic(data[i]);
+
+          } else if (card_has_label(data[i], personal_label)) {
+            // console.log("move to Backlog (personal)/Backlog");
+            board = boards.backlog_personal;
+            list = lists.backlog.personal_backlog;
+          } else if (card_has_label(data[i], process_label)) {
+            // console.log("move to Backlog (personal)/Backlog");
+            board = boards.backlog_personal;
+            list = lists.backlog.personal_backlog;
+          } else if (card_has_label(data[i], work_label)) {
+            // console.log("move to Backlog (work)/Backlog");
+            board = boards.backlog_work;
+            list = lists.backlog.work_backlog;
+          }
+          if (board && list) {
+            would_move_to_list(data[i].name, board, list);
+            cardops.push(moveCard(data[i], board, list, 'top'));
+          }
+        }
+        cb(null);
+      });
+    },
+  ], cb);
+}
 
 exports.maintenance = function(cb) {
   async.series([
@@ -95,9 +225,7 @@ exports.maintenance = function(cb) {
         for (i = 0; i < data.length; i++) {
           // console.log(data[i]);
           if (card_has_label(data[i], cherry_pick_label)) {
-            if (dryRun) {
-              would_move_to_list(data[i].name, boards.daily, lists.today);
-            }
+            would_move_to_list(data[i].name, boards.daily, lists.today);
             cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.today,
                                                 "bottom", cherry_pick_label));
           }
@@ -108,14 +236,12 @@ exports.maintenance = function(cb) {
     },
     function(cb) {
       console.log("move all cherry picked items from Work backlog to Kanban Today");
-      t.get("/1/lists/" + lists.backlog.personal_backlog.id + "/cards", function(err, data) {
+      t.get("/1/lists/" + lists.backlog.work_backlog.id + "/cards", function(err, data) {
         if (err) return cb(err);
         for (i = 0; i < data.length; i++) {
           // console.log(data[i]);
           if (card_has_label(data[i], cherry_pick_label)) {
-            if (dryRun) {
-              would_move_to_list(data[i].name, boards.daily, lists.today);
-            }
+            would_move_to_list(data[i].name, boards.daily, lists.today);
             cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.today,
                                                 "bottom", cherry_pick_label));
           }
@@ -131,9 +257,7 @@ exports.maintenance = function(cb) {
         for (i = 0; i < data.length; i++) {
           // console.log(data[i]);
           if (card_has_label(data[i], cherry_pick_label)) {
-            if (dryRun) {
-              would_move_to_list(data[i].name, boards.daily, lists.today);
-            }
+            would_move_to_list(data[i].name, boards.daily, lists.today);
             cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.today,
                                                 "bottom", cherry_pick_label));
           }
@@ -149,9 +273,7 @@ exports.maintenance = function(cb) {
         for (i = 0; i < data.length; i++) {
           // console.log(data[i]);
           if (card_has_label(data[i], cherry_pick_label)) {
-            if (dryRun) {
-              would_move_to_list(data[i].name, boards.daily, lists.today);
-            }
+            would_move_to_list(data[i].name, boards.daily, lists.today);
             cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.today,
                                                 "bottom", cherry_pick_label));
           }
@@ -167,9 +289,7 @@ exports.maintenance = function(cb) {
         for (i = 0; i < data.length; i++) {
           // console.log(data[i]);
           if (card_has_label(data[i], cherry_pick_label)) {
-            if (dryRun) {
-              would_move_to_list(data[i].name, boards.daily, lists.today);
-            }
+            would_move_to_list(data[i].name, boards.daily, lists.today);
             cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.today,
                                                 "bottom", cherry_pick_label));
           }
@@ -185,11 +305,26 @@ exports.maintenance = function(cb) {
         for (i = 0; i < data.length; i++) {
           // console.log(data[i]);
           if (card_has_label(data[i], cherry_pick_label)) {
-            if (dryRun) {
-              would_move_to_list(data[i].name, boards.daily, lists.today);
-            }
+            would_move_to_list(data[i].name, boards.daily, lists.today);
             cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.today,
                                                 "bottom", cherry_pick_label));
+          }
+        }
+        cb(null);
+      });
+
+    },
+    function(cb) {
+      console.log("move all someday/maybe items from Inbox to someday/maybe");
+      t.get("/1/lists/" + lists.inbox.id + "/cards", function(err, data) {
+        if (err) return cb(err);
+        for (i = 0; i < data.length; i++) {
+          // console.log(data[i]);
+          if (card_title_starts_with(data[i], "^\\? ")) {
+            would_move_to_list(data[i].name, boards.someday, lists.somedaymaybe);
+            cardops.push(moveCardAndTruncateTitle(data[i], boards.someday,
+                                                  lists.somedaymaybe,
+                                                  "top", 2));
           }
         }
         cb(null);
@@ -252,6 +387,18 @@ exports.init = function(_dryRun, cb) {
             lists.monthly_sprints = data[i];
           // } else {
           //   console.log(data[i]);
+          }
+        }
+        cb(null);
+      });
+    },
+    function(cb) {
+      console.log("Get lists from Someday/Maybe");
+      t.get("/1/boards/" + boards.someday.id  + "/lists", function(err, data) {
+        if (err) return cb(err);
+        for (i = 0; i < data.length; i++) {
+          if (data[i].name == 'Maybe') {
+            lists.somedaymaybe = data[i];
           }
         }
         cb(null);
@@ -322,6 +469,13 @@ var card_has_date = function(card) {
   return false;
 }
 
+var card_title_starts_with = function(card, str) {
+  if (card.name.search(str) == 0) {
+    return true;
+  }
+  return false;
+}
+
 var card_has_periodic = function(card) {
   if (card.name.search(/\((po|p1w|p2w|p4w|p12m)\)/) >= 0) {
     return true;
@@ -381,7 +535,7 @@ var removeLabel = function(card, labelname) {
       // console.log(with_auth);
 
       t.del("/1/cards/" + card.id + "/idLabels/" + label.id, function(err,data) {
-              if (err) throw err;
+              if (err) next(err);
               console.log("removed label " + label.color + " from " + card.name);
               next();
             });
@@ -391,6 +545,66 @@ var removeLabel = function(card, labelname) {
   };
   return todo;
 }
+
+var movePeriodic = function(card) {
+  var board = boards.periodic_board;
+  var list = null;
+  if (card.name.includes('(po)')) {
+    // console.log("would move " + card.name + " to often list");
+    list = lists.periodic.often;
+  } else if (card.name.includes('(p1w)')) {
+    // console.log("would move " + card.name + " to weekly list");
+    list = lists.periodic.weekly;
+  } else if (card.name.includes('(p2w)')) {
+    // console.log("would move " + card.name + " to bi-weekly/monthly list");
+    list = lists.periodic.biweekmonthly;
+  } else if (card.name.includes('(p4w)')) {
+    // console.log("would move " + card.name + " to bi-weekly/monthly list");
+    list = lists.periodic.biweekmonthly;
+  } else if (card.name.includes('(p3m)')) {
+    list = lists.periodic.quarteryearly;
+  } else if (card.name.includes('(p12m)')) {
+    list = lists.periodic.quarteryearly;
+  }
+  if (board && list) {
+    would_move_to_list(card.name, board, list);
+    cardops.push(moveCard(card, board, list, 'top'));
+  }
+
+}
+
+var moveCard = function(card, board, list, pos) {
+  var todo = function(next) {
+
+    if (dryRun) {
+      // DEBUG: don't execute the PUT
+      // console.log("would move " + card.name + " to " + board.name
+      //             + " list " + list.name);
+      would_move_to_list(card.name, board, list);
+      return next();
+    } else {
+      // console.log("PUT " + "/1/cards/" + card.id +
+      //          JSON.stringify({a
+      //            idBoard: board.id,
+      //            idList: list.id,
+      //            pos: pos
+      //          }));
+    }
+
+    t.put("/1/cards/" + card.id,
+          {
+            idBoard: board.id,
+            idList: list.id,
+            pos: pos
+          }, function(err,data) {
+              if (err) next(err);
+              console.log("moved " + card.name + " to " + board.name
+                          + " list " + list.name);
+              next();
+          });
+  };
+  return todo;
+};
 
 var moveCardAndRemoveLabel = function(card, board, list, pos, label) {
   var todo = function(next) {
@@ -416,11 +630,48 @@ var moveCardAndRemoveLabel = function(card, board, list, pos, label) {
             idList: list.id,
             pos: pos
           }, function(err,data) {
-              if (err) throw err;
+              if (err) next(err);
               console.log("moved " + card.name + " to " + board.name
                           + " list " + list.name);
               // console.log("got " + JSON.stringify(data));
               async.series([ removeLabel(data, label) ]);
+              next();
+          });
+  };
+  return todo;
+}
+
+var moveCardAndTruncateTitle = function(card, board, list, pos, truncamount) {
+  var todo = function(next) {
+
+    var newName = card.name.substring(truncamount);
+    console.log("name is now " + newName);
+    if (dryRun) {
+      // DEBUG: don't execute the PUT
+      // console.log("would move " + card.name + " to " + board.name
+      //             + " list " + list.name);
+      // XXX: this will not get shown because it is executed during the cardops
+      // processing which happens after the summary is printed.
+      would_move_to_list(newName, board, list);
+      return next();
+    } else {
+      // console.log("PUT " + "/1/cards/" + card.id +
+      //          JSON.stringify({a
+      //            idBoard: board.id,
+      //            idList: list.id,
+      //            pos: pos
+      //          }));
+    }
+    t.put("/1/cards/" + card.id,
+          {
+            idBoard: board.id,
+            idList: list.id,
+            pos: pos,
+            name: newName
+          }, function(err,data) {
+              if (err) next(err);
+              console.log("moved " + newName + " to " + board.name
+                          + " list " + list.name);
               next();
           });
   };
