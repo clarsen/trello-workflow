@@ -2,6 +2,7 @@ var Trello = require("node-trello");
 var dateFormat = require('dateformat');
 var async = require('async');
 var Table = require('cli-table');
+var moment = require('moment-timezone');
 
 // to get auth token
 var t = new Trello(process.env.appkey, process.env.authtoken);
@@ -497,7 +498,8 @@ var updateCardName = function(card) {
 
 var addDateToName = function(card) {
   var dt = new Date(card.dateLastActivity);
-  var dts = dateFormat(dt, "(yyyy-mm-dd)");
+  var dts = moment(dt).tz("America/Los_Angeles").format("(YYYY-MM-DD)");
+  // var dts = dateFormat(dt, "(yyyy-mm-dd)");
   if (dryRun) {
     console.log("would add " + dts + " to " + card.name);
   } else {
