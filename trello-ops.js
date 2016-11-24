@@ -21,7 +21,8 @@ var boards = {
   backlog_work: null,
   history_board: null,
   periodic_board: null,
-  someday: null
+  someday: null,
+  shopping: null,
 };
 var lists = {
   inbox: null,
@@ -41,6 +42,12 @@ var lists = {
     quarteryearly: null,
   },
   somedaymaybe: null,
+  shopping: {
+    needtoget: null,
+    purchased: null,
+    pantry: null,
+    refrigerator: null,
+  },
 };
 // var daily, backlog_personal, backlog_work;
 
@@ -332,6 +339,54 @@ exports.maintenance = function(cb) {
       });
 
     },
+    function(cb) {
+      console.log("move all cherry picked items from Shopping purchased to Shopping Need to get");
+      t.get("/1/lists/" + lists.shopping.purchased.id + "/cards", function(err, data) {
+        if (err) return cb(err);
+        for (i = 0; i < data.length; i++) {
+          // console.log(data[i]);
+          if (card_has_label(data[i], cherry_pick_label)) {
+            would_move_to_list(data[i].name, boards.shopping, lists.shopping.needtoget);
+            cardops.push(moveCardAndRemoveLabel(data[i], boards.shopping, lists.shopping.needtoget,
+                                                "top", cherry_pick_label));
+          }
+        }
+        cb(null);
+      });
+
+    },
+    function(cb) {
+      console.log("move all cherry picked items from Shopping pantry to Shopping Need to get");
+      t.get("/1/lists/" + lists.shopping.pantry.id + "/cards", function(err, data) {
+        if (err) return cb(err);
+        for (i = 0; i < data.length; i++) {
+          // console.log(data[i]);
+          if (card_has_label(data[i], cherry_pick_label)) {
+            would_move_to_list(data[i].name, boards.shopping, lists.shopping.needtoget);
+            cardops.push(moveCardAndRemoveLabel(data[i], boards.shopping, lists.shopping.needtoget,
+                                                "top", cherry_pick_label));
+          }
+        }
+        cb(null);
+      });
+
+    },
+    function(cb) {
+      console.log("move all cherry picked items from Shopping refrigerator to Shopping Need to get");
+      t.get("/1/lists/" + lists.shopping.refrigerator.id + "/cards", function(err, data) {
+        if (err) return cb(err);
+        for (i = 0; i < data.length; i++) {
+          // console.log(data[i]);
+          if (card_has_label(data[i], cherry_pick_label)) {
+            would_move_to_list(data[i].name, boards.shopping, lists.shopping.needtoget);
+            cardops.push(moveCardAndRemoveLabel(data[i], boards.shopping, lists.shopping.needtoget,
+                                                "top", cherry_pick_label));
+          }
+        }
+        cb(null);
+      });
+
+    },
 
   ], cb);
 }
@@ -360,6 +415,9 @@ exports.init = function(_dryRun, cb) {
             boards.periodic_board = data[i];
           } else if (data[i].name == 'Someday/Maybe') {
             boards.someday = data[i];
+          } else if (data[i].name == 'Shopping') {
+            boards.shopping = data[i];
+            // console.log(data[i]);
           // } else if (data[i].name != '') {
             // console.log(data[i]);
           }
@@ -451,6 +509,25 @@ exports.init = function(_dryRun, cb) {
         cb(null);
       });
     },
+    function(cb) {
+      console.log("Get lists from Shopping");
+      t.get("/1/boards/" + boards.shopping.id  + "/lists", function(err, data) {
+        if (err) return cb(err);
+        for (i = 0; i < data.length; i++) {
+          if (data[i].name == 'Need to get') {
+            lists.shopping.needtoget = data[i];
+          } else if (data[i].name == 'Purchased') {
+            lists.shopping.purchased = data[i];
+          } else if (data[i].name == 'Pantry') {
+            lists.shopping.pantry = data[i];
+          } else if (data[i].name == 'Refrigerator') {
+            lists.shopping.refrigerator = data[i];
+          }
+        }
+        cb(null);
+      });
+    },
+
   ], cb);
 }
 
