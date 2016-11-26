@@ -41,7 +41,13 @@ var lists = {
     biweekmonthly: null,
     quarteryearly: null,
   },
-  somedaymaybe: null,
+  somedaymaybe: {
+    maybe: null,
+    productideation: null,
+    writing: null,
+    appsiwouldlike: null,
+    somedayspend: null,
+  },
   shopping: {
     needtoget: null,
     purchased: null,
@@ -225,6 +231,72 @@ exports.maintenance = function(cb) {
       });
     },
 
+    function(cb) {
+      console.log("add creation date to title (if doesn't exist)");
+      t.get("/1/lists/" + lists.somedaymaybe.maybe.id + "/cards", function(err, data) {
+        if (err) return cb(err);
+        for (i = 0; i < data.length; i++) {
+          // console.log(data[i]);
+          if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
+            addDateToName(data[i]);
+          }
+        }
+        cb(null);
+      });
+    },
+    function(cb) {
+      console.log("add creation date to title (if doesn't exist)");
+      t.get("/1/lists/" + lists.somedaymaybe.productideation.id + "/cards", function(err, data) {
+        if (err) return cb(err);
+        for (i = 0; i < data.length; i++) {
+          // console.log(data[i]);
+          if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
+            addDateToName(data[i]);
+          }
+        }
+        cb(null);
+      });
+    },
+    function(cb) {
+      console.log("add creation date to title (if doesn't exist)");
+      t.get("/1/lists/" + lists.somedaymaybe.writing.id + "/cards", function(err, data) {
+        if (err) return cb(err);
+        for (i = 0; i < data.length; i++) {
+          // console.log(data[i]);
+          if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
+            addDateToName(data[i]);
+          }
+        }
+        cb(null);
+      });
+    },
+    function(cb) {
+      console.log("add creation date to title (if doesn't exist)");
+      t.get("/1/lists/" + lists.somedaymaybe.appsiwouldlike.id + "/cards", function(err, data) {
+        if (err) return cb(err);
+        for (i = 0; i < data.length; i++) {
+          // console.log(data[i]);
+          if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
+            addDateToName(data[i]);
+          }
+        }
+        cb(null);
+      });
+    },
+    function(cb) {
+      console.log("add creation date to title (if doesn't exist)");
+      t.get("/1/lists/" + lists.somedaymaybe.somedayspend.id + "/cards", function(err, data) {
+        if (err) return cb(err);
+        for (i = 0; i < data.length; i++) {
+          // console.log(data[i]);
+          if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
+            addDateToName(data[i]);
+          }
+        }
+        cb(null);
+      });
+    },
+
     // cherry pick
     function(cb) {
       console.log("move all cherry picked items from Personal backlog to Kanban Today");
@@ -329,9 +401,9 @@ exports.maintenance = function(cb) {
         for (i = 0; i < data.length; i++) {
           // console.log(data[i]);
           if (card_title_starts_with(data[i], "^\\? ")) {
-            would_move_to_list(data[i].name, boards.someday, lists.somedaymaybe);
+            would_move_to_list(data[i].name, boards.someday, lists.somedaymaybe.maybe);
             cardops.push(moveCardAndTruncateTitle(data[i], boards.someday,
-                                                  lists.somedaymaybe,
+                                                  lists.somedaymaybe.maybe,
                                                   "top", 2));
           }
         }
@@ -457,7 +529,15 @@ exports.init = function(_dryRun, cb) {
         if (err) return cb(err);
         for (i = 0; i < data.length; i++) {
           if (data[i].name == 'Maybe') {
-            lists.somedaymaybe = data[i];
+            lists.somedaymaybe.maybe = data[i];
+          } else if (data[i].name == 'Product ideation') {
+            lists.somedaymaybe.productideation = data[i];
+          } else if (data[i].name == 'Writing') {
+            lists.somedaymaybe.writing = data[i];
+          } else if (data[i].name == 'Apps I would like to write') {
+            lists.somedaymaybe.appsiwouldlike = data[i];
+          } else if (data[i].name == 'Someday/Maybe (spend $$)') {
+            lists.somedaymaybe.somedayspend = data[i];
           }
         }
         cb(null);
