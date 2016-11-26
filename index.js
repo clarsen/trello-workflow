@@ -407,7 +407,7 @@ async.series([
     if (!program.weeklyReview) {
       return cb(null);
     }
-    console.log("copy periodic items from Done to history lists");
+    console.log("copy periodic items, move other items from Done to history lists");
     t.get("/1/lists/" + tops.lists.done.id + "/cards", function(err, data) {
       if (err) return cb(err);
       for (i = 0; i < data.length; i++) {
@@ -416,6 +416,12 @@ async.series([
             history_this_week, "bottom");
           cardops.push(copyCard(data[i], tops.boards.history_board,
                        history_this_week, "bottom"));
+        } else {
+          would_move_to_list(data[i].name, tops.boards.history_board,
+            history_this_week, "bottom");
+          cardops.push(moveCard(data[i], tops.boards.history_board,
+                       history_this_week, "bottom"));
+
         }
       }
       cb(null);
@@ -440,13 +446,13 @@ async.series([
     if (!program.weeklyReview) {
       return cb(null);
     }
-    console.log("move all items from Weekly goals to history list");
+    console.log("copy all items from Weekly goals to history list");
     t.get("/1/lists/" + tops.lists.weekly_goals.id + "/cards", function(err, data) {
       if (err) return cb(err);
       for (i = 0; i < data.length; i++) {
           // console.log("would move to history");
-          would_move_to_list(data[i].name, tops.boards.history_board, history_this_week_goals);
-          cardops.push(moveCard(data[i], tops.boards.history_board,
+          would_copy_to_list(data[i].name, tops.boards.history_board, history_this_week_goals);
+          cardops.push(copyCard(data[i], tops.boards.history_board,
                        history_this_week_goals, "bottom"));
       }
       cb(null);
