@@ -31,7 +31,7 @@ Trello boards should be set up as per expectations of code.
     $ node index.js -t
 
 ### After the weekly review
-    $ node index.js -w --history "37 September"
+    $ node index.js -w "37 September"
 
 ## Notable mentions
 - Butlerbot does this using trello cards as a conversational API https://trello.com/b/2dLsEE9t/butler-for-trello

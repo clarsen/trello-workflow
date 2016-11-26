@@ -640,6 +640,8 @@ var movePeriodic = function(card) {
   } else if (card.name.includes('(p4w)')) {
     // console.log("would move " + card.name + " to bi-weekly/monthly list");
     list = lists.periodic.biweekmonthly;
+  } else if (card.name.includes('(p2m)')) {
+    list = lists.periodic.quarteryearly;
   } else if (card.name.includes('(p3m)')) {
     list = lists.periodic.quarteryearly;
   } else if (card.name.includes('(p12m)')) {

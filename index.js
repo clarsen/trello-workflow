@@ -78,7 +78,6 @@ program
 
 var periodic_label = 'purple';
 
-var periodic_board, someday;
 var history_this_week, history_this_week_goals;
 var history_this_month_goals, history_this_month_sprints;
 
@@ -136,7 +135,7 @@ var card_has_periodic = function(card) {
 }
 
 var movePeriodic = function(card) {
-  var board = periodic_board;
+  var board = tops.boards.periodic_board;
   var list = null;
   if (card.name.includes('(po)')) {
     // console.log("would move " + card.name + " to often list");
@@ -150,6 +149,8 @@ var movePeriodic = function(card) {
   } else if (card.name.includes('(p4w)')) {
     // console.log("would move " + card.name + " to bi-weekly/monthly list");
     list = tops.lists.periodic.biweekmonthly;
+  } else if (card.name.includes('(p2m)')) {
+    list = tops.lists.periodic.quarteryearly;
   } else if (card.name.includes('(p3m)')) {
     list = tops.lists.periodic.quarteryearly;
   } else if (card.name.includes('(p12m)')) {
@@ -206,34 +207,6 @@ var addDateToName = function(card) {
     card.name = card.name + " " + dts;
     // tidy_lists.push(updateCardName(card));
     cardops.push(updateCardName(card));
-  }
-}
-
-var copyBackPeriodic = function(card) {
-  var board = periodic_board;
-  var list = null;
-  if (card.name.includes('(po)')) {
-    // console.log("would copy " + card.name + " to often list");
-    list = tops.lists.periodic.often;
-  } else if (card.name.includes('(p1w)')) {
-    // console.log("would copy " + card.name + " to weekly list");
-    list = tops.lists.periodic.weekly;
-  } else if (card.name.includes('(p2w)')) {
-    // console.log("would copy " + card.name + " to bi-weekly/monthly list");
-    list = tops.lists.periodic.biweekmonthly;
-  } else if (card.name.includes('(p4w)')) {
-    // console.log("would copy " + card.name + " to bi-weekly/monthly list");
-    list = tops.lists.periodic.biweekmonthly;
-  } else if (card.name.includes('(p3m)')) {
-    // console.log("would copy " + card.name + " to quarterly/yearly list");
-    list = tops.lists.periodic.quarteryearly;
-  } else if (card.name.includes('(p12m)')) {
-    // console.log("would copy " + card.name + " to quarterly/yearly list");
-    list = tops.lists.periodic.quarteryearly;
-  }
-  if (board && list) {
-    would_copy_to_list(card.name, board, list);
-    cardops.push(copyCard(card, board, list, 'top'));
   }
 }
 
@@ -434,14 +407,15 @@ async.series([
     if (!program.weeklyReview) {
       return cb(null);
     }
-    console.log("copy periodic items from Done to periodic board lists");
+    console.log("copy periodic items from Done to history lists");
     t.get("/1/lists/" + tops.lists.done.id + "/cards", function(err, data) {
       if (err) return cb(err);
       for (i = 0; i < data.length; i++) {
-        // console.log(data[i]);
         if (card_has_label(data[i], periodic_label)) {
-          console.log("would copy periodic");
-          copyBackPeriodic(data[i]);
+          would_copy_to_list(data[i].name, tops.boards.history_board,
+            history_this_week, "bottom");
+          cardops.push(copyCard(data[i], tops.boards.history_board,
+                       history_this_week, "bottom"));
         }
       }
       cb(null);
@@ -451,14 +425,12 @@ async.series([
     if (!program.weeklyReview) {
       return cb(null);
     }
-    console.log("move all items from Done to history list");
+    console.log("move all items from Done to appropriate periodic board list");
     t.get("/1/lists/" + tops.lists.done.id + "/cards", function(err, data) {
       if (err) return cb(err);
       for (i = 0; i < data.length; i++) {
-          // console.log("would move to history");
-          would_move_to_list(data[i].name, tops.boards.history_board, history_this_week);
-          cardops.push(moveCard(data[i], tops.boards.history_board,
-                       history_this_week, "bottom"));
+          // console.log("would move to periodic list");
+          movePeriodic(data[i]);
       }
       cb(null);
     });
