@@ -418,7 +418,7 @@ exports.maintenance = function(cb) {
 
     // move to someday/maybe
     function(cb) {
-      console.log("move all to_somedaymaybe items from Personal backlog to top");
+      console.log("move all to_somedaymaybe items from Personal backlog to someday/maybe top");
       t.get("/1/lists/" + lists.backlog.personal_backlog.id + "/cards", function(err, data) {
         if (err) return cb(err);
         for (i = 0; i < data.length; i++) {
@@ -427,6 +427,24 @@ exports.maintenance = function(cb) {
             would_move_to_list(data[i].name, boards.someday, lists.somedaymaybe.maybe);
             cardops.push(moveCardAndRemoveLabel(data[i], boards.someday, lists.somedaymaybe.maybe,
                                                 "top", to_somedaymaybe_label));
+          }
+        }
+        cb(null);
+      });
+
+    },
+
+    // move to done
+    function(cb) {
+      console.log("move all to_done items from Personal backlog to done bottom");
+      t.get("/1/lists/" + lists.backlog.personal_backlog.id + "/cards", function(err, data) {
+        if (err) return cb(err);
+        for (i = 0; i < data.length; i++) {
+          // console.log(data[i]);
+          if (card_has_label(data[i], to_done_label)) {
+            would_move_to_list(data[i].name, boards.daily, lists.done);
+            cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.done,
+                                                "bottom", to_done_label));
           }
         }
         cb(null);
