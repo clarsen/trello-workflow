@@ -96,8 +96,10 @@ var note_completed = function(item) {
 }
 
 var summarize_week = function() {
+  var keys = Object.keys(day_summary).sort();
 
-  for (var dest in day_summary) {
+  for (var i in keys) {
+    var dest = keys[i];
     var d = {};
     d[dest] = day_summary[dest].join('\n');
     week_summary.push(d);
@@ -446,11 +448,10 @@ async.series([
     if (!program.weeklyReview) {
       return cb(null);
     }
-    console.log("copy all items from Weekly goals to history list");
-    t.get("/1/lists/" + tops.lists.weekly_goals.id + "/cards", function(err, data) {
+    console.log("copy all items (snapshot) from Monthly goals to history list");
+    t.get("/1/lists/" + tops.lists.monthly_goals.id + "/cards", function(err, data) {
       if (err) return cb(err);
       for (i = 0; i < data.length; i++) {
-          // console.log("would move to history");
           would_copy_to_list(data[i].name, tops.boards.history_board, history_this_week_goals);
           cardops.push(copyCard(data[i], tops.boards.history_board,
                        history_this_week_goals, "bottom"));
@@ -463,13 +464,13 @@ async.series([
     if (!program.monthlyReview) {
       return cb(null);
     }
-    console.log("move all items from Monthly sprints to history monthly sprints list");
+    console.log("copy all items from Monthly sprints to history monthly sprints list");
     t.get("/1/lists/" + tops.lists.monthly_sprints.id + "/cards", function(err, data) {
       if (err) return cb(err);
       for (i = 0; i < data.length; i++) {
           // console.log("would move to history");
-          would_move_to_list(data[i].name, tops.boards.history_board, history_this_month_sprints);
-          cardops.push(moveCard(data[i], tops.boards.history_board,
+          would_copy_to_list(data[i].name, tops.boards.history_board, history_this_month_sprints);
+          cardops.push(copyCard(data[i], tops.boards.history_board,
                        history_this_month_sprints, "bottom"));
       }
       cb(null);
@@ -480,13 +481,13 @@ async.series([
     if (!program.monthlyReview) {
       return cb(null);
     }
-    console.log("move all items from Monthly goals to history monthly goals list");
+    console.log("copy all items from Monthly goals to history monthly goals list");
     t.get("/1/lists/" + tops.lists.monthly_goals.id + "/cards", function(err, data) {
       if (err) return cb(err);
       for (i = 0; i < data.length; i++) {
           // console.log("would move to history");
-          would_move_to_list(data[i].name, tops.boards.history_board, history_this_month_goals);
-          cardops.push(moveCard(data[i], tops.boards.history_board,
+          would_copy_to_list(data[i].name, tops.boards.history_board, history_this_month_goals);
+          cardops.push(copyCard(data[i], tops.boards.history_board,
                        history_this_month_goals, "bottom"));
       }
       cb(null);

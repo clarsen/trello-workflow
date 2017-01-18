@@ -14,6 +14,9 @@ var personal_label = 'blue';
 var process_label = 'green';
 var work_label = 'yellow';
 var periodic_label = 'purple';
+var to_top_label = 'sky';
+var to_somedaymaybe_label = 'lime';
+var to_done_label = 'pink';
 
 var boards = {
   daily: null,
@@ -394,6 +397,25 @@ exports.maintenance = function(cb) {
       });
 
     },
+
+    // cherry pick
+    function(cb) {
+      console.log("move all to_top items from Personal backlog to top");
+      t.get("/1/lists/" + lists.backlog.personal_backlog.id + "/cards", function(err, data) {
+        if (err) return cb(err);
+        for (i = 0; i < data.length; i++) {
+          // console.log(data[i]);
+          if (card_has_label(data[i], to_top_label)) {
+            would_move_to_list(data[i].name, boards.backlog_personal, lists.backlog.personal_backlog);
+            cardops.push(moveCardAndRemoveLabel(data[i], boards.backlog_personal, lists.backlog.personal_backlog,
+                                                "top", to_top_label));
+          }
+        }
+        cb(null);
+      });
+
+    },
+
     function(cb) {
       console.log("move all someday/maybe items from Inbox to someday/maybe");
       t.get("/1/lists/" + lists.inbox.id + "/cards", function(err, data) {
@@ -481,7 +503,7 @@ exports.init = function(_dryRun, cb) {
             // console.log(data[i]);
           } else if (data[i].name == 'Backlog (work)') {
             boards.backlog_work = data[i];
-          } else if (data[i].name == 'History 2016') {
+          } else if (data[i].name == 'History 2017') {
             boards.history_board = data[i];
           } else if (data[i].name == 'Periodic board') {
             boards.periodic_board = data[i];
