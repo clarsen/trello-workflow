@@ -418,6 +418,7 @@ exports.cherrypick_maint = function(cb) {
 
   console.log("move all cherry picked items from all Periodic board lists to Kanban Today");
   list_results.push(tget("/1/lists/" + lists.backlog.work_backlog.id + "/cards"));
+  list_results.push(tget("/1/lists/" + lists.periodic.often.id + "/cards"));
   list_results.push(tget("/1/lists/" + lists.periodic.weekly.id + "/cards"));
   list_results.push(tget("/1/lists/" + lists.periodic.biweekmonthly.id + "/cards"));
   list_results.push(tget("/1/lists/" + lists.periodic.quarteryearly.id + "/cards"));
