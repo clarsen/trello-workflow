@@ -22,7 +22,6 @@ Trello boards should be set up as per expectations of code.
       --weekly-report                 Report on when items were moved into Done list (grouped by day of week)
       -w, --weekly-review [WW Month]  After weekly review cleanup, history list to move Done list to
       -t, --today                     Before starting today (also can be done at end of day)
-      -c, --cherry-pick               move cards labeled 'orange' from lists into Today
       -m, --maintenance               Periodically, add creation dates to titles, etc.
       --monthly-review [Month]        After monthly review cleanup
       --watch                         watch boards

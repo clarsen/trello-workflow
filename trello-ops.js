@@ -38,6 +38,7 @@ var lists = {
     work_backlog: null,
     personal_backlog: null,
   },
+  all_personal_backlog_lists: [],
   periodic: {
     often: null,
     weekly: null,
@@ -194,208 +195,13 @@ exports.preparetoday = function(cb) {
 
 exports.maintenance = function(cb) {
   async.series([
+    // creation date
     function(cb) {
-      console.log("add creation date to title (if doesn't exist)");
-      t.get("/1/lists/" + lists.inbox.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
-            addDateToName(data[i]);
-          }
-        }
-        cb(null);
-      });
+      exports.add_creation_date_to_title(cb);
     },
-    function(cb) {
-      console.log("add creation date to title (if doesn't exist)");
-      t.get("/1/lists/" + lists.today.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
-            addDateToName(data[i]);
-          }
-        }
-        cb(null);
-      });
-    },
-    function(cb) {
-      console.log("add creation date to title (if doesn't exist)");
-      t.get("/1/lists/" + lists.backlog.personal_backlog.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
-            addDateToName(data[i]);
-          }
-        }
-        cb(null);
-      });
-    },
-
-    function(cb) {
-      console.log("add creation date to title (if doesn't exist)");
-      t.get("/1/lists/" + lists.somedaymaybe.maybe.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
-            addDateToName(data[i]);
-          }
-        }
-        cb(null);
-      });
-    },
-    function(cb) {
-      console.log("add creation date to title (if doesn't exist)");
-      t.get("/1/lists/" + lists.somedaymaybe.productideation.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
-            addDateToName(data[i]);
-          }
-        }
-        cb(null);
-      });
-    },
-    function(cb) {
-      console.log("add creation date to title (if doesn't exist)");
-      t.get("/1/lists/" + lists.somedaymaybe.writing.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
-            addDateToName(data[i]);
-          }
-        }
-        cb(null);
-      });
-    },
-    function(cb) {
-      console.log("add creation date to title (if doesn't exist)");
-      t.get("/1/lists/" + lists.somedaymaybe.appsiwouldlike.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
-            addDateToName(data[i]);
-          }
-        }
-        cb(null);
-      });
-    },
-    function(cb) {
-      console.log("add creation date to title (if doesn't exist)");
-      t.get("/1/lists/" + lists.somedaymaybe.somedayspend.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
-            addDateToName(data[i]);
-          }
-        }
-        cb(null);
-      });
-    },
-
     // cherry pick
     function(cb) {
-      console.log("move all cherry picked items from Personal backlog to Kanban Today");
-      t.get("/1/lists/" + lists.backlog.personal_backlog.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (card_has_label(data[i], cherry_pick_label)) {
-            would_move_to_list(data[i].name, boards.daily, lists.today);
-            cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.today,
-                                                "bottom", cherry_pick_label));
-          }
-        }
-        cb(null);
-      });
-
-    },
-    function(cb) {
-      console.log("move all cherry picked items from Work backlog to Kanban Today");
-      t.get("/1/lists/" + lists.backlog.work_backlog.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (card_has_label(data[i], cherry_pick_label)) {
-            would_move_to_list(data[i].name, boards.daily, lists.today);
-            cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.today,
-                                                "bottom", cherry_pick_label));
-          }
-        }
-        cb(null);
-      });
-
-    },
-    function(cb) {
-      console.log("move all cherry picked items from Periodic often to Kanban Today");
-      t.get("/1/lists/" + lists.periodic.often.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (card_has_label(data[i], cherry_pick_label)) {
-            would_move_to_list(data[i].name, boards.daily, lists.today);
-            cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.today,
-                                                "bottom", cherry_pick_label));
-          }
-        }
-        cb(null);
-      });
-
-    },
-    function(cb) {
-      console.log("move all cherry picked items from Periodic weekly to Kanban Today");
-      t.get("/1/lists/" + lists.periodic.weekly.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (card_has_label(data[i], cherry_pick_label)) {
-            would_move_to_list(data[i].name, boards.daily, lists.today);
-            cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.today,
-                                                "bottom", cherry_pick_label));
-          }
-        }
-        cb(null);
-      });
-
-    },
-    function(cb) {
-      console.log("move all cherry picked items from Periodic bi-weekly/monthly to Kanban Today");
-      t.get("/1/lists/" + lists.periodic.biweekmonthly.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (card_has_label(data[i], cherry_pick_label)) {
-            would_move_to_list(data[i].name, boards.daily, lists.today);
-            cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.today,
-                                                "bottom", cherry_pick_label));
-          }
-        }
-        cb(null);
-      });
-
-    },
-    function(cb) {
-      console.log("move all cherry picked items from Periodic quarterly/yearly to Kanban Today");
-      t.get("/1/lists/" + lists.periodic.quarteryearly.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (card_has_label(data[i], cherry_pick_label)) {
-            would_move_to_list(data[i].name, boards.daily, lists.today);
-            cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.today,
-                                                "bottom", cherry_pick_label));
-          }
-        }
-        cb(null);
-      });
-
+      exports.cherrypick_maint(cb);
     },
 
     // move to top
@@ -554,152 +360,227 @@ exports.maintenance = function(cb) {
   ], cb);
 }
 
+var tget = function(path) {
+  return new Promise(function(resolve, reject) {
+    console.log("getting " + path);
+    t.get(path, function(err, data) {
+      if (err) reject(err);
+      console.log("got " + path);
+      resolve(data);
+    });
+  });
+}
+
+exports.add_creation_date_to_title = function(cb) {
+  console.log("add creation date to title (if doesn't exist)");
+  var list_results = [];
+  list_results.push(tget("/1/lists/" + lists.inbox.id + "/cards"));
+  list_results.push(tget("/1/lists/" + lists.today.id + "/cards"));
+  list_results.push(tget("/1/lists/" + lists.backlog.personal_backlog.id + "/cards"));
+  list_results.push(tget("/1/lists/" + lists.somedaymaybe.maybe.id + "/cards"));
+  list_results.push(tget("/1/lists/" + lists.somedaymaybe.productideation.id + "/cards"));
+  list_results.push(tget("/1/lists/" + lists.somedaymaybe.writing.id + "/cards"));
+  list_results.push(tget("/1/lists/" + lists.somedaymaybe.appsiwouldlike.id + "/cards"));
+  list_results.push(tget("/1/lists/" + lists.somedaymaybe.somedayspend.id + "/cards"));
+
+  Promise.all(list_results).then(function(list_results) {
+    var j;
+    for (j = 0; j < list_results.length; j++) {
+      var data = list_results[j];
+      // console.log("result is " + data);
+      for (i = 0; i < data.length; i++) {
+        // console.log(data[i]);
+        if (!card_has_date(data[i]) && !card_has_periodic(data[i])) {
+          addDateToName(data[i]);
+        }
+      }
+    }
+    console.log("..added creation date to titles");
+    cb(null);
+  }).catch(function(error) {
+    console.log(error);
+    cb(error);
+  });
+
+}
+
+
+exports.cherrypick_maint = function(cb) {
+
+  // cherry pick
+  console.log("move all cherry picked items from all Personal backlog lists to Kanban Today");
+  var list_results = [];
+
+  var i;
+  for (i = 0; i < lists.all_personal_backlog_lists.length; i++) {
+    list_results.push(tget("/1/lists/" + lists.all_personal_backlog_lists[i].id + "/cards"));
+  }
+
+  console.log("move all cherry picked items from all Periodic board lists to Kanban Today");
+  list_results.push(tget("/1/lists/" + lists.backlog.work_backlog.id + "/cards"));
+  list_results.push(tget("/1/lists/" + lists.periodic.weekly.id + "/cards"));
+  list_results.push(tget("/1/lists/" + lists.periodic.biweekmonthly.id + "/cards"));
+  list_results.push(tget("/1/lists/" + lists.periodic.quarteryearly.id + "/cards"));
+
+  Promise.all(list_results).then(function(list_results) {
+    var j;
+    for (j = 0; j < list_results.length; j++) {
+      var data = list_results[j];
+      // console.log("result is " + data);
+      for (i = 0; i < data.length; i++) {
+        // console.log(data[i]);
+        if (card_has_label(data[i], cherry_pick_label)) {
+          would_move_to_list(data[i].name, boards.daily, lists.today);
+          cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.today,
+                                              "bottom", cherry_pick_label));
+        }
+      }
+    }
+    console.log("..collected cherry picked items to Kanban Today");
+    cb(null);
+  }).catch(function(error) {
+    console.log(error);
+    cb(error);
+  });
+
+}
+
 exports.init = function(_dryRun, cb) {
   dryRun = _dryRun;
-  async.series([
-    // get board info
-    function(cb) {
-      console.log("Get boards");
-      t.get("/1/members/me/boards", function(err, data) {
-        if (err) return cb(err);
-        var i;
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i].name);
-          if (data[i].name == 'Kanban daily/weekly') {
-            boards.daily = data[i];
-          } else if (data[i].name == 'Backlog (Personal)') {
-            boards.backlog_personal = data[i];
-            // console.log(data[i]);
-          } else if (data[i].name == 'Backlog (work)') {
-            boards.backlog_work = data[i];
-          } else if (data[i].name == 'History 2017') {
-            boards.history_board = data[i];
-          } else if (data[i].name == 'Periodic board') {
-            boards.periodic_board = data[i];
-          } else if (data[i].name == 'Someday/Maybe') {
-            boards.someday = data[i];
-          } else if (data[i].name == 'Shopping') {
-            boards.shopping = data[i];
-            // console.log(data[i]);
-          // } else if (data[i].name != '') {
-            // console.log(data[i]);
-          }
-        }
-        cb(null);
-      });
-    },
-    function(cb) {
-      console.log("Get lists from Kanban daily board");
-      // console.log(daily);
-      // console.log(daily.id);
-      t.get("/1/boards/" + boards.daily.id  + "/lists", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          if (data[i].name == 'Inbox') {
-            lists.inbox = data[i];
-          } else if (data[i].name == 'Today') {
-            lists.today = data[i];
-          } else if (data[i].name == 'Done this week') {
-            lists.done = data[i];
-          } else if (data[i].name == 'Weekly Goals') {
-            lists.weekly_goals = data[i];
-          } else if (data[i].name == 'Monthly Goals') {
-            lists.monthly_goals = data[i];
-          } else if (data[i].name == 'Monthly Sprints') {
-            lists.monthly_sprints = data[i];
-          // } else {
-          //   console.log(data[i]);
-          }
-        }
-        cb(null);
-      });
-    },
-    function(cb) {
-      console.log("Get lists from Someday/Maybe");
-      t.get("/1/boards/" + boards.someday.id  + "/lists", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          if (data[i].name == 'Maybe') {
-            lists.somedaymaybe.maybe = data[i];
-          } else if (data[i].name == 'Product ideation') {
-            lists.somedaymaybe.productideation = data[i];
-          } else if (data[i].name == 'Writing') {
-            lists.somedaymaybe.writing = data[i];
-          } else if (data[i].name == 'Apps I would like to write') {
-            lists.somedaymaybe.appsiwouldlike = data[i];
-          } else if (data[i].name == 'Someday/Maybe (spend $$)') {
-            lists.somedaymaybe.somedayspend = data[i];
-          }
-        }
-        cb(null);
-      });
-    },
-    function(cb) {
-      console.log("Get lists from Backlog(personal)");
-      t.get("/1/boards/" + boards.backlog_personal.id  + "/lists", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          if (data[i].name == 'Backlog') {
-            lists.backlog.personal_backlog = data[i];
-          }
-        }
-        cb(null);
-      });
-    },
-    function(cb) {
-      console.log("Get lists from Backlog(work)");
-      t.get("/1/boards/" + boards.backlog_work.id  + "/lists", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          if (data[i].name == 'Backlog') {
-            lists.backlog.work_backlog = data[i];
-          }
-        }
-        cb(null);
-      });
-    },
-    function(cb) {
-      console.log("Get lists from periodic board");
-      // console.log(daily);
-      // console.log(daily.id);
-      t.get("/1/boards/" + boards.periodic_board.id  + "/lists", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          if (data[i].name == 'Often') {
-            lists.periodic.often = data[i];
-          } else if (data[i].name == 'Weekly') {
-            lists.periodic.weekly = data[i];
-          } else if (data[i].name == 'Bi-weekly to monthly') {
-            lists.periodic.biweekmonthly = data[i];
-          } else if (data[i].name == 'Quarterly to Yearly') {
-            lists.periodic.quarteryearly = data[i];
-          // } else {
-          //  console.log(data[i]);
-          }
-        }
-        cb(null);
-      });
-    },
-    function(cb) {
-      console.log("Get lists from Shopping");
-      t.get("/1/boards/" + boards.shopping.id  + "/lists", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          if (data[i].name == 'Need to get') {
-            lists.shopping.needtoget = data[i];
-          } else if (data[i].name == 'Purchased') {
-            lists.shopping.purchased = data[i];
-          } else if (data[i].name == 'Pantry') {
-            lists.shopping.pantry = data[i];
-          } else if (data[i].name == 'Refrigerator') {
-            lists.shopping.refrigerator = data[i];
-          }
-        }
-        cb(null);
-      });
-    },
+  console.log("Get boards..");
+  tget("/1/members/me/boards").then(function(data) {
+    var i;
+    for (i = 0; i < data.length; i++) {
+      // console.log(data[i].name);
+      if (data[i].name == 'Kanban daily/weekly') {
+        boards.daily = data[i];
+      } else if (data[i].name == 'Backlog (Personal)') {
+        boards.backlog_personal = data[i];
+        // console.log(data[i]);
+      } else if (data[i].name == 'Backlog (work)') {
+        boards.backlog_work = data[i];
+      } else if (data[i].name == 'History 2017') {
+        boards.history_board = data[i];
+      } else if (data[i].name == 'Periodic board') {
+        boards.periodic_board = data[i];
+      } else if (data[i].name == 'Someday/Maybe') {
+        boards.someday = data[i];
+      } else if (data[i].name == 'Shopping') {
+        boards.shopping = data[i];
+        // console.log(data[i]);
+      // } else if (data[i].name != '') {
+        // console.log(data[i]);
+      }
+    }
 
-  ], cb);
+    console.log("..Got boards");
+
+    console.log("Get lists from Kanban daily board..");
+    var p1 = tget("/1/boards/" + boards.daily.id  + "/lists").then(function(data) {
+      for (i = 0; i < data.length; i++) {
+        if (data[i].name == 'Inbox') {
+          lists.inbox = data[i];
+        } else if (data[i].name == 'Today') {
+          lists.today = data[i];
+        } else if (data[i].name == 'Done this week') {
+          lists.done = data[i];
+        } else if (data[i].name == 'Weekly Goals') {
+          lists.weekly_goals = data[i];
+        } else if (data[i].name == 'Monthly Goals') {
+          lists.monthly_goals = data[i];
+        } else if (data[i].name == 'Monthly Sprints') {
+          lists.monthly_sprints = data[i];
+        // } else {
+        //   console.log(data[i]);
+        }
+      }
+      console.log("..got lists from Kanban daily board");
+    });
+
+    console.log("Get lists from Someday/Maybe..");
+    var p2 = tget("/1/boards/" + boards.someday.id  + "/lists").then(function(data) {
+      for (i = 0; i < data.length; i++) {
+        if (data[i].name == 'Maybe') {
+          lists.somedaymaybe.maybe = data[i];
+        } else if (data[i].name == 'Product ideation') {
+          lists.somedaymaybe.productideation = data[i];
+        } else if (data[i].name == 'Writing') {
+          lists.somedaymaybe.writing = data[i];
+        } else if (data[i].name == 'Apps I would like to write') {
+          lists.somedaymaybe.appsiwouldlike = data[i];
+        } else if (data[i].name == 'Someday/Maybe (spend $$)') {
+          lists.somedaymaybe.somedayspend = data[i];
+        }
+      }
+      console.log("..got lists from Someday/Maybe");
+    });
+
+    console.log("Get lists from Backlog(personal)..");
+    var p3 = tget("/1/boards/" + boards.backlog_personal.id  + "/lists").then(function(data) {
+      for (i = 0; i < data.length; i++) {
+        if (data[i].name == 'Backlog') {
+          lists.backlog.personal_backlog = data[i];
+        }
+        lists.all_personal_backlog_lists.push(data[i]);
+      }
+      console.log("..got lists from Backlog(personal)");
+    });
+
+    console.log("Get lists from Backlog(work)");
+    var p4 = tget("/1/boards/" + boards.backlog_work.id  + "/lists").then(function(data) {
+      for (i = 0; i < data.length; i++) {
+        if (data[i].name == 'Backlog') {
+          lists.backlog.work_backlog = data[i];
+        }
+      }
+      console.log("..got lists from Backlog(work)");
+    });
+
+    console.log("Get lists from periodic board");
+    var p5 = tget("/1/boards/" + boards.periodic_board.id  + "/lists").then(function(data) {
+      for (i = 0; i < data.length; i++) {
+        if (data[i].name == 'Often') {
+          lists.periodic.often = data[i];
+        } else if (data[i].name == 'Weekly') {
+          lists.periodic.weekly = data[i];
+        } else if (data[i].name == 'Bi-weekly to monthly') {
+          lists.periodic.biweekmonthly = data[i];
+        } else if (data[i].name == 'Quarterly to Yearly') {
+          lists.periodic.quarteryearly = data[i];
+        // } else {
+        //  console.log(data[i]);
+        }
+      }
+      console.log("..got lists from periodic board");
+    });
+    console.log("Get lists from Shopping");
+    var p6 = tget("/1/boards/" + boards.shopping.id  + "/lists").then(function(data) {
+      for (i = 0; i < data.length; i++) {
+        if (data[i].name == 'Need to get') {
+          lists.shopping.needtoget = data[i];
+        } else if (data[i].name == 'Purchased') {
+          lists.shopping.purchased = data[i];
+        } else if (data[i].name == 'Pantry') {
+          lists.shopping.pantry = data[i];
+        } else if (data[i].name == 'Refrigerator') {
+          lists.shopping.refrigerator = data[i];
+        }
+      }
+      console.log("..got lists from Shopping");
+    });
+
+    Promise.all([p1, p2, p3, p4, p5, p6]).then(function(results) {
+      console.log("returning");
+      cb(null);
+    }).catch(function(error) {
+      console.log(error);
+      cb(err);
+    });
+
+  }).catch(function(error) {
+    console.log(error);
+    cb(err);
+  });
 }
 
 var card_has_label = function(card, color) {
