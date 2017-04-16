@@ -123,6 +123,64 @@ console.log("tops.summary");
   }
 }
 
+exports.goal_summary = function(cb) {
+  tget("/1/lists/" + lists.monthly_goals.id  + "/cards").then(function(data) {
+    var checklist_results = [];
+    var cards = {}
+    var weeksummary = {};
+
+    for (i = 0; i < data.length; i++) {
+      // console.log(data[i]);
+      cards[data[i].id] = data[i];
+      checklist_results.push(tget("/1/cards/" + data[i].id + "/checklists"));
+    }
+    Promise.all(checklist_results).then(function(checklist_results) {
+      console.log("For retrospective:");
+      console.log("------------------");
+      for (i = 0; i < checklist_results.length; i++) {
+        var checklist = checklist_results[i][0];
+        // console.log(checklist);
+        var card = cards[checklist.idCard];
+        var theme = card.name;
+        console.log("#### " + theme);
+        if (!(theme in weeksummary)) {
+          weeksummary[theme] = {}
+        }
+        for (j = 0; j < checklist.checkItems.length; j++) {
+          var goal = checklist.checkItems[j].name
+          console.log("- " + goal);
+          // match week DD: goal (YYYY-MM-DD) (status)
+          // but ignore the YYYY-MM-DD bit
+          var matches  = goal.match(/week (\d+): (.*) (?:\(\d\d\d\d-\d\d-\d\d\))(?: (\(.*\)))?/i);
+          var week = matches[1];
+          var text = matches[2];
+          var status = matches[3];
+          if (!(week in weeksummary[theme])) {
+            weeksummary[theme][week] = [];
+          }
+          weeksummary[theme][week].push(text + (status ? " " + status : ""));
+        }
+      }
+      console.log("");
+      console.log("For plan summary:");
+      console.log("-----------------");
+      for (var theme in weeksummary) {
+        console.log("#### " + theme);
+        for (var week in weeksummary[theme]) {
+          console.log("- week " + week + ": " + weeksummary[theme][week].join(', '));
+        }
+      }
+      cb(null);
+    }).catch(function(error) {
+      console.log(error);
+      cb(err);
+    });
+  }).catch(function(error) {
+    console.log(error);
+    cb(err);
+  });
+}
+
 exports.preparetoday = function(cb) {
   async.series([
     function(cb) {
@@ -369,6 +427,58 @@ var tget = function(path) {
       resolve(data);
     });
   });
+}
+
+exports.maybe_history_board_create = function(program, cb) {
+  tget("/1/boards/" + boards.history_board.id  + "/lists").then(function(data) {
+    for (i = 0; i < data.length; i++) {
+      if (data[i].name == program.weeklyReview) {
+        history_this_week = data[i];
+      }
+      if (data[i].name == program.weeklyReview + " goals") {
+        history_this_week_goals = data[i];
+      }
+      if (data[i].name == program.monthlyReview + " goals") {
+        history_this_month_goals = data[i];
+      }
+      if (data[i].name == program.monthlyReview + " sprints") {
+        history_this_month_sprints = data[i];
+      }
+    }
+    if (program.weeklyReview && !history_this_week) {
+      console.log("couldn't find tasks lists for " + program.weeklyReview
+                  + " in history board" );
+      cardops.push(create_list(boards.history_board, program.weeklyReview));
+    }
+    if (program.weeklyReview && !history_this_week_goals) {
+      console.log("couldn't find goals lists for " + program.weeklyReview
+                  + " in history board" );
+      cardops.push(create_list(boards.history_board, program.weeklyReview + " goals"));
+    }
+    if (program.monthlyReview && !history_this_month_goals) {
+      console.log("couldn't find goals lists for " + program.monthlyReview
+                  + " in history board" );
+      cardops.push(create_list(boards.history_board, program.monthlyReview + " goals"));
+    }
+    if (program.monthlyReview && !history_this_month_sprints) {
+      console.log("couldn't find sprints lists for " + program.monthlyReview
+                  + " in history board" );
+      cardops.push(create_list(boards.history_board, program.monthlyReview + " sprints"));
+    }
+    // execute any operations that have been queued up.
+    if (cardops.length > 0) {
+      var clear_cardops_and_cb = function() {
+        cardops = [];
+        cb(null);
+      }
+      async.series(cardops, clear_cardops_and_cb);
+    } else {
+      cb(null);
+    }
+  }).catch(function(error) {
+    console.log(error);
+    cb(error);
+  })
 }
 
 exports.add_creation_date_to_title = function(cb) {
@@ -809,6 +919,27 @@ var moveCardAndTruncateTitle = function(card, board, list, pos, truncamount) {
               next();
           });
   };
+  return todo;
+}
+
+var create_list = function(board, name) {
+  var todo = function(next) {
+    if (dryRun) {
+      // DEBUG: don't execute the POST
+      console.log("would creae list " + name + " in board " + board.name);
+      return next();
+    }
+    t.post("/1/lists",
+        {
+          name: name,
+          idBoard: board.id,
+          pos: 'bottom'
+        }, function(err, data) {
+          if (err) next(err);
+          console.log("created " + name);
+          next();
+        });
+  }
   return todo;
 }
 

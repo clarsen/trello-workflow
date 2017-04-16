@@ -73,6 +73,7 @@ program
   .option('-c, --cherry-pick', "move cards labeled 'orange' from lists into Today")
   .option('-m, --maintenance', "Periodically, add creation dates to titles, etc.")
   .option('--monthly-review [Month]', "After monthly review cleanup")
+  .option('-g, --goal-summary', "At beginning or end of week, summarize goals or progress")
   .option('--watch', "watch boards")
   .parse(process.argv);
 
@@ -337,6 +338,12 @@ async.series([
     if (!program.weeklyReview && !program.monthlyReview) {
       return cb(null);
     }
+    tops.maybe_history_board_create(program, cb);
+  },
+  function(cb) {
+    if (!program.weeklyReview && !program.monthlyReview) {
+      return cb(null);
+    }
     console.log("Get lists from history board");
     // console.log(daily);
     // console.log(daily.id);
@@ -384,6 +391,13 @@ async.series([
       return cb(null);
     }
     tops.preparetoday(cb);
+  },
+
+  function(cb) {
+    if (!program.goalSummary) {
+      return cb(null);
+    }
+    tops.goal_summary(cb);
   },
 
   function(cb) {
