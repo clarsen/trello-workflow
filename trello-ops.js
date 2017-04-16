@@ -148,7 +148,7 @@ exports.goal_summary = function(cb) {
         }
         for (j = 0; j < checklist.checkItems.length; j++) {
           var goal = checklist.checkItems[j].name
-          console.log("- " + goal);
+          console.log("    - " + goal);
           // match week DD: goal (YYYY-MM-DD) (status)
           // but ignore the YYYY-MM-DD bit
           var matches  = goal.match(/week (\d+): (.*) (?:\(\d\d\d\d-\d\d-\d\d\))(?: (\(.*\)))?/i);
@@ -448,22 +448,22 @@ exports.maybe_history_board_create = function(program, cb) {
     if (program.weeklyReview && !history_this_week) {
       console.log("couldn't find tasks lists for " + program.weeklyReview
                   + " in history board" );
-      cardops.push(create_list(boards.history_board, program.weeklyReview));
+      cardops.push(create_list(boards.history_board, program.weeklyReview, true));
     }
     if (program.weeklyReview && !history_this_week_goals) {
       console.log("couldn't find goals lists for " + program.weeklyReview
                   + " in history board" );
-      cardops.push(create_list(boards.history_board, program.weeklyReview + " goals"));
+      cardops.push(create_list(boards.history_board, program.weeklyReview + " goals", true));
     }
     if (program.monthlyReview && !history_this_month_goals) {
       console.log("couldn't find goals lists for " + program.monthlyReview
                   + " in history board" );
-      cardops.push(create_list(boards.history_board, program.monthlyReview + " goals"));
+      cardops.push(create_list(boards.history_board, program.monthlyReview + " goals", true));
     }
     if (program.monthlyReview && !history_this_month_sprints) {
       console.log("couldn't find sprints lists for " + program.monthlyReview
                   + " in history board" );
-      cardops.push(create_list(boards.history_board, program.monthlyReview + " sprints"));
+      cardops.push(create_list(boards.history_board, program.monthlyReview + " sprints", true));
     }
     // execute any operations that have been queued up.
     if (cardops.length > 0) {
@@ -922,11 +922,11 @@ var moveCardAndTruncateTitle = function(card, board, list, pos, truncamount) {
   return todo;
 }
 
-var create_list = function(board, name) {
+var create_list = function(board, name, force=false) {
   var todo = function(next) {
-    if (dryRun) {
+    if (dryRun && !force) {
       // DEBUG: don't execute the POST
-      console.log("would creae list " + name + " in board " + board.name);
+      console.log("would create list " + name + " in board " + board.name);
       return next();
     }
     t.post("/1/lists",
