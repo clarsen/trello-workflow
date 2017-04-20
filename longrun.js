@@ -35,12 +35,12 @@ async.series([
     job.start();
 
     var morningjob = new CronJob({
-      cronTime: '30 0 4 * * *',
+      cronTime: '0 11 22 * * *',
       onTick: function() {
         /*
          * Runs every day 4:00:30am.
          */
-         console.log("every day 4am");
+         console.log("every day 9:30:00pm");
          async.series([
            function(cb) {
              tops.preparetoday(cb);
