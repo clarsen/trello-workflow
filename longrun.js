@@ -53,6 +53,8 @@ async.series([
       start: false,
       timeZone: 'America/Los_Angeles'
     });
-    morningjob.start();
+
+    // Moved to go-trello-workflow 
+		// morningjob.start();
   },
 ]);

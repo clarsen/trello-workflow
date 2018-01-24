@@ -17,6 +17,7 @@ var periodic_label = 'purple';
 var to_top_label = 'sky';
 var to_somedaymaybe_label = 'lime';
 var to_done_label = 'pink';
+var history_board = 'History 2018';
 
 var boards = {
   daily: null,
@@ -570,7 +571,7 @@ exports.init = function(_dryRun, cb) {
         // console.log(data[i]);
       } else if (data[i].name == 'Backlog (work)') {
         boards.backlog_work = data[i];
-      } else if (data[i].name == 'History 2017') {
+      } else if (data[i].name == history_board) {
         boards.history_board = data[i];
       } else if (data[i].name == 'Periodic board') {
         boards.periodic_board = data[i];
