@@ -259,96 +259,96 @@ exports.maintenance = function(cb) {
 //     exports.add_creation_date_to_title(cb);
 //  },
     // cherry pick
-    function(cb) {
-      exports.cherrypick_maint(cb);
-    },
+    // function(cb) {
+    //   exports.cherrypick_maint(cb);
+    // },
 
     // move to top
-    function(cb) {
-      console.log("move all to_top items from Personal backlog to top");
-      t.get("/1/lists/" + lists.backlog.personal_backlog.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (card_has_label(data[i], to_top_label)) {
-            would_move_to_list(data[i].name, boards.backlog_personal, lists.backlog.personal_backlog);
-            cardops.push(moveCardAndRemoveLabel(data[i], boards.backlog_personal, lists.backlog.personal_backlog,
-                                                "top", to_top_label));
-          }
-        }
-        cb(null);
-      });
+    // function(cb) {
+    //   console.log("move all to_top items from Personal backlog to top");
+    //   t.get("/1/lists/" + lists.backlog.personal_backlog.id + "/cards", function(err, data) {
+    //     if (err) return cb(err);
+    //     for (i = 0; i < data.length; i++) {
+    //       // console.log(data[i]);
+    //       if (card_has_label(data[i], to_top_label)) {
+    //         would_move_to_list(data[i].name, boards.backlog_personal, lists.backlog.personal_backlog);
+    //         cardops.push(moveCardAndRemoveLabel(data[i], boards.backlog_personal, lists.backlog.personal_backlog,
+    //                                             "top", to_top_label));
+    //       }
+    //     }
+    //     cb(null);
+    //   });
+    //
+    // },
 
-    },
-
-    function(cb) {
-      console.log("move all to_top items from Work backlog to top");
-      t.get("/1/lists/" + lists.backlog.work_backlog.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (card_has_label(data[i], to_top_label)) {
-            would_move_to_list(data[i].name, boards.backlog_work, lists.backlog.work_backlog);
-            cardops.push(moveCardAndRemoveLabel(data[i], boards.backlog_work, lists.backlog.work_backlog,
-                                                "top", to_top_label));
-          }
-        }
-        cb(null);
-      });
-
-    },
+    // function(cb) {
+    //   console.log("move all to_top items from Work backlog to top");
+    //   t.get("/1/lists/" + lists.backlog.work_backlog.id + "/cards", function(err, data) {
+    //     if (err) return cb(err);
+    //     for (i = 0; i < data.length; i++) {
+    //       // console.log(data[i]);
+    //       if (card_has_label(data[i], to_top_label)) {
+    //         would_move_to_list(data[i].name, boards.backlog_work, lists.backlog.work_backlog);
+    //         cardops.push(moveCardAndRemoveLabel(data[i], boards.backlog_work, lists.backlog.work_backlog,
+    //                                             "top", to_top_label));
+    //       }
+    //     }
+    //     cb(null);
+    //   });
+    //
+    // },
 
     // move to someday/maybe
-    function(cb) {
-      console.log("move all to_somedaymaybe items from Personal backlog to someday/maybe top");
-      t.get("/1/lists/" + lists.backlog.personal_backlog.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (card_has_label(data[i], to_somedaymaybe_label)) {
-            would_move_to_list(data[i].name, boards.someday, lists.somedaymaybe.maybe);
-            cardops.push(moveCardAndRemoveLabel(data[i], boards.someday, lists.somedaymaybe.maybe,
-                                                "top", to_somedaymaybe_label));
-          }
-        }
-        cb(null);
-      });
-
-    },
+    // function(cb) {
+    //   console.log("move all to_somedaymaybe items from Personal backlog to someday/maybe top");
+    //   t.get("/1/lists/" + lists.backlog.personal_backlog.id + "/cards", function(err, data) {
+    //     if (err) return cb(err);
+    //     for (i = 0; i < data.length; i++) {
+    //       // console.log(data[i]);
+    //       if (card_has_label(data[i], to_somedaymaybe_label)) {
+    //         would_move_to_list(data[i].name, boards.someday, lists.somedaymaybe.maybe);
+    //         cardops.push(moveCardAndRemoveLabel(data[i], boards.someday, lists.somedaymaybe.maybe,
+    //                                             "top", to_somedaymaybe_label));
+    //       }
+    //     }
+    //     cb(null);
+    //   });
+    //
+    // },
 
     // move to done
-    function(cb) {
-      console.log("move all to_done items from Personal backlog to done bottom");
-      t.get("/1/lists/" + lists.backlog.personal_backlog.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (card_has_label(data[i], to_done_label)) {
-            would_move_to_list(data[i].name, boards.daily, lists.done);
-            cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.done,
-                                                "bottom", to_done_label));
-          }
-        }
-        cb(null);
-      });
-
-    },
-    function(cb) {
-      console.log("move all to_done items from Work backlog to done bottom");
-      t.get("/1/lists/" + lists.backlog.work_backlog.id + "/cards", function(err, data) {
-        if (err) return cb(err);
-        for (i = 0; i < data.length; i++) {
-          // console.log(data[i]);
-          if (card_has_label(data[i], to_done_label)) {
-            would_move_to_list(data[i].name, boards.daily, lists.done);
-            cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.done,
-                                                "bottom", to_done_label));
-          }
-        }
-        cb(null);
-      });
-
-    },
+    // function(cb) {
+    //   console.log("move all to_done items from Personal backlog to done bottom");
+    //   t.get("/1/lists/" + lists.backlog.personal_backlog.id + "/cards", function(err, data) {
+    //     if (err) return cb(err);
+    //     for (i = 0; i < data.length; i++) {
+    //       // console.log(data[i]);
+    //       if (card_has_label(data[i], to_done_label)) {
+    //         would_move_to_list(data[i].name, boards.daily, lists.done);
+    //         cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.done,
+    //                                             "bottom", to_done_label));
+    //       }
+    //     }
+    //     cb(null);
+    //   });
+    //
+    // },
+    // function(cb) {
+    //   console.log("move all to_done items from Work backlog to done bottom");
+    //   t.get("/1/lists/" + lists.backlog.work_backlog.id + "/cards", function(err, data) {
+    //     if (err) return cb(err);
+    //     for (i = 0; i < data.length; i++) {
+    //       // console.log(data[i]);
+    //       if (card_has_label(data[i], to_done_label)) {
+    //         would_move_to_list(data[i].name, boards.daily, lists.done);
+    //         cardops.push(moveCardAndRemoveLabel(data[i], boards.daily, lists.done,
+    //                                             "bottom", to_done_label));
+    //       }
+    //     }
+    //     cb(null);
+    //   });
+    //
+    // },
 
     function(cb) {
       console.log("move all someday/maybe items from Inbox to someday/maybe");
